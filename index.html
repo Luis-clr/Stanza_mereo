@@ -99,7 +99,7 @@
             input.value = value;
         }
 
-        // Função para validar e enviar o CPF
+        // Função para validar e enviar o CPF para o Webhook do Make
         async function submitCpf() {
             const cpf = document.getElementById('cpf').value;
             const cpfNumeros = cpf.replace(/\D/g, '');
@@ -110,36 +110,28 @@
             }
 
             try {
-                // Faz a primeira requisição para gerar o JWT
-                const jwtResponse = await fetch('http://magnus.mereo.com/api/v1/service/generateKey/jwt/0851e500-3cb1-4f7d-9671-2035d9c9f891', {
-                    method: 'GET'
-                });
-
-                if (!jwtResponse.ok) {
-                    throw new Error('Erro ao gerar o JWT.');
-                }
-
-                const jwtData = await jwtResponse.json();
-                const token = jwtData.jwt; // Aqui você assume que o token está dentro de um campo "jwt" no retorno
-
-                console.log(token);
-
-                // Faz a segunda requisição com o JWT e o CPF
-                const userResponse = await fetch('http://magnus.mereo.com/api/v1/service/getuserlink', {
+                // Envia o CPF para o Webhook do Make
+                const webhookResponse = await fetch('https://hook.us2.make.com/lm6czrh663jqvclzduhj7ip6432gsl16', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ cpf: cpfNumeros })
                 });
 
-                if (!userResponse.ok) {
-                    throw new Error('Erro ao buscar os dados do usuário.');
+                if (!webhookResponse.ok) {
+                    throw new Error('Erro ao enviar o CPF para o Webhook.');
                 }
 
-                const userData = await userResponse.json();
-                alert('Dados do usuário recebidos com sucesso: ' + JSON.stringify(userData));
+                // Recebe a resposta do Make
+                const responseData = await webhookResponse.json();
+                console.log(responseData)
+                if (responseData.link) {
+                    // Redireciona o usuário para o link recebido do Make
+                    window.location.href = responseData.link;
+                } else {
+                    alert('CPF enviado com sucesso. Aguarde o processamento.');
+                }
 
             } catch (error) {
                 alert('Ocorreu um erro: ' + error.message);
