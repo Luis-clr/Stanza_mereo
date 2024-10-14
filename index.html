@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - CPF do Colaborador</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .login-box {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 350px;
+            text-align: center;
+        }
+
+        .login-box img {
+            width: 120px;
+            margin-bottom: 20px;
+        }
+
+        .login-box h1 {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .login-box input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 15px;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .login-box button:hover {
+            background-color: #0056b3;
+        }
+
+        .login-box p {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <!-- Espaço para a logo da empresa -->
+        <img src="image.png" alt="Logo da Empresa">
+        <h1>Informe seu CPF</h1>
+        
+        <!-- Campo de CPF com máscara -->
+        <input type="text" placeholder="Digite seu CPF" id="cpf" maxlength="14" oninput="mascaraCpf(this)">
+        
+        <!-- Botão de envio -->
+        <button onclick="submitCpf()">Enviar</button>
+
+        <p>CPF obrigatório para acesso ao sistema.</p>
+    </div>
+
+    <script>
+        // Função para aplicar a máscara de CPF
+        function mascaraCpf(input) {
+            let value = input.value;
+            value = value.replace(/\D/g, ""); // Remove tudo que não for dígito
+            value = value.replace(/(\d{3})(\d)/, "$1.$2"); // Adiciona ponto após os três primeiros dígitos
+            value = value.replace(/(\d{3})(\d)/, "$1.$2"); // Adiciona ponto após os três dígitos seguintes
+            value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2"); // Adiciona traço antes dos dois últimos dígitos
+            input.value = value;
+        }
+
+        // Função para validar e enviar o CPF
+        async function submitCpf() {
+            const cpf = document.getElementById('cpf').value;
+            const cpfNumeros = cpf.replace(/\D/g, '');
+
+            if (cpfNumeros.length !== 11) {
+                alert('Por favor, insira um CPF válido com 11 dígitos.');
+                return;
+            }
+
+            try {
+                // Faz a primeira requisição para gerar o JWT
+                const jwtResponse = await fetch('http://magnus.mereo.com/api/v1/service/generateKey/jwt/0851e500-3cb1-4f7d-9671-2035d9c9f891', {
+                    method: 'GET'
+                });
+
+                if (!jwtResponse.ok) {
+                    throw new Error('Erro ao gerar o JWT.');
+                }
+
+                const jwtData = await jwtResponse.json();
+                const token = jwtData.jwt; // Aqui você assume que o token está dentro de um campo "jwt" no retorno
+
+                console.log(token);
+
+                // Faz a segunda requisição com o JWT e o CPF
+                const userResponse = await fetch('http://magnus.mereo.com/api/v1/service/getuserlink', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ cpf: cpfNumeros })
+                });
+
+                if (!userResponse.ok) {
+                    throw new Error('Erro ao buscar os dados do usuário.');
+                }
+
+                const userData = await userResponse.json();
+                alert('Dados do usuário recebidos com sucesso: ' + JSON.stringify(userData));
+
+            } catch (error) {
+                alert('Ocorreu um erro: ' + error.message);
+            }
+        }
+    </script>
+
+</body>
+</html>
